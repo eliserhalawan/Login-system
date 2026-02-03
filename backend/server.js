@@ -1,5 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const Database = require('better-sqlite3');
+
+const db = new Database('users.db');
+
 const app = express();
 
 app.use(express.json());
