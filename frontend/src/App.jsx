@@ -31,7 +31,7 @@ export default function App() {
       setPassword('');
     }
   } else {
-    setMessage(data.error || 'Something went wrong');
+    setMessage(data.error || data.message);
   }
 };
 
