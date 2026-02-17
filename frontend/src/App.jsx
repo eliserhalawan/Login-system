@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {useState} from 'react';
 
 export default function App() {
@@ -6,6 +7,32 @@ export default function App() {
   const [message, setMessage] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+  const token = localStorage.getItem('token');
+  
+  if (token) {
+    fetch('http://localhost:3000/api/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (res.ok) {
+        return res.json();
+      } else {
+        // Token expired or invalid
+        localStorage.removeItem('token');
+      }
+    })
+    .then(data => {
+      if (data && data.user) {
+        setUsername(data.user.username);
+        setIsLoggedIn(true);
+      }
+    });
+  }
+}, []);
 
   const handleSubmit = async () => {
     setMessage('');
@@ -24,6 +51,7 @@ export default function App() {
     
     if (response.ok) {
      if (isLogin) {
+      localStorage.setItem('token', data.token);
       setIsLoggedIn(true);
     } else {
       setMessage('Account created! You can now login.');
@@ -36,6 +64,7 @@ export default function App() {
 };
 
     const handleLogout = () => {
+      localStorage.removeItem('token');
       setIsLoggedIn(false);
       setUsername('');
       setPassword('');

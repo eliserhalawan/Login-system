@@ -1,6 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const Database = require('better-sqlite3');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = 'your-secret-key-12345';
 
 const db = new Database('users.db');
 
@@ -22,6 +25,23 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
+
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided!' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ message: 'Invalid token!' });
+    }
+};
 
 const PORT = 3000;
 
@@ -61,9 +81,15 @@ app.post('/api/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid username or password!' });
     }
 
+    const token = jwt.sign(
+        { userId: user.id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
     res.json({
         message: 'Login successful!',
-        userId: user.id,
+        token: token,
         username: user.username
     });
 });
@@ -71,6 +97,14 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/users', (req, res) => {  
     const allUsers = db.prepare('SELECT id, username FROM users').all();
     res.json(allUsers);
+});
+
+
+app.get('/api/profile', verifyToken, (req, res) => {
+  res.json({
+    message: 'This is protected data!',
+    user: req.user
+  });
 });
 
 app.listen(PORT, () => {
